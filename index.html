@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoonSquad</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0f7fa; /* Light blue background */
+            color: #004d40; /* Dark green text */
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #004d40; /* Dark green */
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        main {
+            padding: 1rem;
+        }
+        .form-container, .posts-container {
+            margin: 1rem 0;
+            padding: 1rem;
+            border: 1px solid #004d40;
+            border-radius: 5px;
+            background-color: #b2dfdb; /* Light green */
+        }
+        input, textarea, button {
+            display: block;
+            width: 100%;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border: 1px solid #004d40;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #004d40;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #00796b;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to GoonSquad</h1>
+        <p>Share what you're doing today and your mood!</p>
+    </header>
+    <main>
+        <div class="form-container">
+            <h2>Create an Account</h2>
+            <form id="signupForm">
+                <input type="text" id="username" placeholder="Enter your username" required>
+                <button type="submit">Sign Up</button>
+            </form>
+        </div>
+
+        <div class="form-container" id="postFormContainer" style="display: none;">
+            <h2>Post Your Update</h2>
+            <form id="postForm">
+                <textarea id="activity" placeholder="What are you doing today?" required></textarea>
+                <input type="text" id="mood" placeholder="How's your mood?" required>
+                <button type="submit">Post</button>
+            </form>
+        </div>
+
+        <div class="posts-container">
+            <h2>Community Posts</h2>
+            <ul id="postsList"></ul>
+        </div>
+    </main>
+    <script>
+        const signupForm = document.getElementById('signupForm');
+        const postFormContainer = document.getElementById('postFormContainer');
+        const postForm = document.getElementById('postForm');
+        const postsList = document.getElementById('postsList');
+    
+        let currentUser = null;
+    
+        // Fetch posts from the backend
+        async function fetchPosts() {
+            const response = await fetch('/.netlify/functions/getPosts');
+            const posts = await response.json();
+            renderPosts(posts);
+        }
+    
+        // Render posts on the page
+        function renderPosts(posts) {
+            postsList.innerHTML = '';
+            posts.forEach(post => {
+                const li = document.createElement('li');
+                li.textContent = `${post.user} is ${post.activity} and feeling ${post.mood}`;
+                postsList.appendChild(li);
+            });
+        }
+    
+        // Handle user signup
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                currentUser = username;
+                alert(`Welcome, ${currentUser}!`);
+                signupForm.style.display = 'none';
+                postFormContainer.style.display = 'block';
+    
+                // Save user information to the backend
+                await fetch('/.netlify/functions/saveUser', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username }),
+                });
+            }
+        });
+    
+        // Handle post submission
+        postForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const activity = document.getElementById('activity').value.trim();
+            const mood = document.getElementById('mood').value.trim();
+            if (activity && mood) {
+                const newPost = { user: currentUser, activity, mood };
+    
+                // Save the post to the backend
+                await fetch('/.netlify/functions/savePost', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newPost),
+                });
+    
+                document.getElementById('activity').value = '';
+                document.getElementById('mood').value = '';
+                fetchPosts(); // Refresh posts
+            }
+        });
+    
+        // Fetch and render posts on page load
+        fetchPosts();
+    </script>
+</body>
+</html></form>
